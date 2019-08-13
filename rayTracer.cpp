@@ -58,6 +58,49 @@ public:
 		return *this;
 	}
 
+	bool operator==(const Vector3D &v) const
+	{
+		if (!isNan() && !v.isNan())
+		{
+			if (x == v.x && y == v.y && z == v.z)
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	bool operator!=(const Vector3D &v) const
+	{
+		if (x != v.x || y != v.y || z != v.z)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	bool isNan() const
+	{
+		if (isnan(x) || isnan(y) || isnan(z))
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
 	float magnitude()
 	{
 		return sqrt(x * x + y * y + z * z);
@@ -85,14 +128,6 @@ public:
 
 		return Vector3D(tempX, tempY, tempZ);
 	}
-
-	void print()
-	{
-		if (!isnan(x) && !isnan(y) && !isnan(z))
-		{
-			printf("X - %f, Y - %f, Z - %f\n", x, y, z);
-		}
-	}
 public:
 	float x;
 	float y;
@@ -105,7 +140,31 @@ public:
 	Line() {};
 	Line(const Vector3D &p1, const Vector3D &p2) : m_p1(p1), m_p2(p2), m_direction(m_p2 - m_p1) {};
 
-	Vector3D intersect(const Line &l)
+	bool operator==(const Line &l) const
+	{
+		if (m_p1 == l.m_p1 && m_p2 == l.m_p2)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	bool operator!=(const Line &l) const
+	{
+		if (m_p1 != l.m_p1 && m_p2 != l.m_p2)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	Vector3D intersect(const Line &l) const
 	{
 		if (isIntersect(l))
 		{
@@ -145,20 +204,12 @@ public:
 			return Vector3D(NAN, NAN, NAN);
 		}
 	}
-	void print()
-	{
-		printf("<<");
-		m_p1.print();
-		printf("><");
-		m_p2.print();
-		printf(">>\n");
-	}
 public:
 	Vector3D m_p1;
 	Vector3D m_p2;
 	Vector3D m_direction;
 private:
-	bool isIntersect(const Line &l)
+	bool isIntersect(const Line &l) const
 	{
 		Vector3D v = m_direction.cross(l.m_direction);
 
@@ -194,28 +245,84 @@ public:
 		}
 	}
 
-	void intersectPoints(const std::vector<Line> &lines)
+	float pointMinRayMagnitude(const Line &ray, const std::vector<Line> &lines) const
 	{
-		for (int i = 0; i < circleLines.size(); i++)
-		{
-			Line &circleLine = circleLines[i];
+		float resultDistance = INFINITY;
 
-			for (int j = 0; j < lines.size(); j++)
+		float minRayDistance = (ray.m_p2 - ray.m_p1).magnitude();
+		for (int j = 0; j < lines.size(); j++)
+		{
+			Line l = lines[j];
+
+			Vector3D intersectPoint = ray.intersect(l);
+
+			if (!intersectPoint.isNan())
 			{
-				Line l = lines[j];
+				float rayDistance = (intersectPoint - ray.m_p1).magnitude();
+
+				if (rayDistance < minRayDistance)
+				{
+					minRayDistance = rayDistance;
+
+					resultDistance = rayDistance;
+				}
+			}
+		}
+
+		return resultDistance;
+	}
+
+	void intersectPoints(const std::vector<Line> &lines, std::vector<Line> &linesToDraw)
+	{
+		for (int i = 0; i < lines.size(); i++)
+		{
+			Line l = lines[i];
+			Line newL = l;
+
+			float minDistanceA = (l.m_p2 - l.m_p1).magnitude();
+			float minDistanceB = (l.m_p1 - l.m_p2).magnitude();
+			for (int j = 0; j < circleLines.size(); j++)
+			{
+				Line &circleLine = circleLines[j];
 
 				Vector3D intersectPoint = circleLine.intersect(l);
 
-				Vector3D a = intersectPoint - circleLine.m_p1;
-				Vector3D b = circleLine.m_p2 - circleLine.m_p1;
-
-				if (b.magnitude() > a.magnitude())
+				if (!intersectPoint.isNan())
 				{
-					if (!isnan(intersectPoint.x) && !isnan(intersectPoint.y) && !isnan(intersectPoint.z))
+					float rayMagnitude = (intersectPoint - circleLine.m_p1).magnitude();
+					float minRayMagnitude = pointMinRayMagnitude(circleLine, lines);
+
+					if (rayMagnitude == minRayMagnitude)
 					{
 						circleLine.m_p2 = intersectPoint;
+
+						float vectorMagnitudeA = (intersectPoint - l.m_p1).magnitude();
+						float vectorMagnitudeB = (intersectPoint - l.m_p2).magnitude();
+
+						if (vectorMagnitudeA < vectorMagnitudeB)
+						{
+							if (vectorMagnitudeA < minDistanceA)
+							{
+								newL.m_p1 = intersectPoint;
+
+								minDistanceA = vectorMagnitudeA;
+							}
+						}
+						else
+						{
+							if (vectorMagnitudeB < minDistanceB)
+							{
+								newL.m_p2 = intersectPoint;
+
+								minDistanceB = vectorMagnitudeB;
+							}
+						}
 					}
 				}
+			}
+			if (l != newL)
+			{
+				linesToDraw.push_back(newL);
 			}
 		}
 	}
@@ -224,7 +331,7 @@ public:
 	float r;
 	std::vector<Line> circleLines;
 private:
-	Vector3D placePoint2D(float theta) const // 0 -> 2pi
+	Vector3D placePoint2D(float theta) const
 	{
 		float tempX = pos.x + r * cos(theta);
 		float tempY = pos.y + r * sin(theta);
@@ -232,7 +339,7 @@ private:
 		return Vector3D(tempX, tempY, 0.0f);
 	}
 
-	Vector3D normal2D(const Vector3D &point) const // scale to make infinity line
+	Vector3D normal2D(const Vector3D &point) const
 	{
 		float tempX = 2.0f * point.x - pos.x;
 		float tempY = 2.0f * point.y - pos.y;

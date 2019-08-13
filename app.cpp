@@ -52,25 +52,35 @@ private:
 
 void App::createLines()
 {
-	Circle c(Vector3D(5.0f, 5.0f, 0.0f), 2.0f);
-	c.placePoints(160);
+	Circle c(Vector3D(0.0f, 0.0f, 0.0f), 1.0f);
+	c.placePoints(100);
 	
-	// TODO: Cube 1
 	Line l1(Vector3D(10.0f, -7.0f, 0.0f), Vector3D(10.0f, 7.0f, 0.0f));
 	Line l2(Vector3D(10.0f, -7.0f, 0.0f), Vector3D(-10.0f, -7.0f, 0.0f));
 	Line l3(Vector3D(10.0f, 7.0f, 0.0f), Vector3D(-10.0f, 7.0f, 0.0f));
 	Line l4(Vector3D(-10.0f, -7.0f, 0.0f), Vector3D(-10.0f, 7.0f, 0.0f));
 
 	Line l5(Vector3D(15.0f, 7.0f, 0.0f), Vector3D(15.0f, -7.0f, 0.0f));
-	Line l6(Vector3D(15.0f, -7.0f, 0.0f), Vector3D(-15.0f, -10.0f, 0.0f));
+	Line l6(Vector3D(15.0f, -7.0f, 0.0f), Vector3D(-15.0f, -18.0f, 0.0f));
+
+	Line l7(Vector3D(10.0f, 20.0f, 0.0f), Vector3D(100.0f, 40.0f, 0.0f));
+	Line l8(Vector3D(5.0f, 20.0f, 0.0f), Vector3D(-100.0f, 40.0f, 0.0f));
+
+	Line l9(Vector3D(10.0f, -20.0f, 0.0f), Vector3D(100.0f, -40.0f, 0.0f));
+	Line l10(Vector3D(5.0f, -20.0f, 0.0f), Vector3D(-100.0f, -40.0f, 0.0f));
 	walls.push_back(l1);
 	walls.push_back(l2);
 	walls.push_back(l3);
 	walls.push_back(l4);
 	walls.push_back(l5);
 	walls.push_back(l6);
+	walls.push_back(l7);
+	walls.push_back(l8);
+	walls.push_back(l9);
+	walls.push_back(l10);
 
-	c.intersectPoints(walls);
+	std::vector<Line> wallsToDraw;
+	c.intersectPoints(walls, wallsToDraw);
 	
 	std::vector<Vertex> vertices;
 	std::vector<UINT> indices;
@@ -78,16 +88,17 @@ void App::createLines()
 	UINT numLines = c.circleLines.size();
 	UINT numAddLines = walls.size();
 
-	for (int i = 0; i < walls.size(); i++)
+	for (int i = 0; i < wallsToDraw.size(); i++)
 	{
+		Line wallToDraw = wallsToDraw[i];
 		XMFLOAT3 f;
-		f.x = walls[i].m_p1.x;
-		f.y = walls[i].m_p1.y;
+		f.x = wallToDraw.m_p1.x;
+		f.y = wallToDraw.m_p1.y;
 		f.z = 0.0f;
 		vertices.push_back(Vertex{ f, (XMFLOAT4)Colors::White });
 
-		f.x = walls[i].m_p2.x;
-		f.y = walls[i].m_p2.y;
+		f.x = wallToDraw.m_p2.x;
+		f.y = wallToDraw.m_p2.y;
 		vertices.push_back(Vertex{ f, (XMFLOAT4)Colors::White });
 	}
 
@@ -178,7 +189,7 @@ void App::onInit()
 	bd.ByteWidth = sizeof(CbObject);
 	bd.CPUAccessFlags = 0;
 	
-	XMVECTOR eye = { 0.0f, 0.0f, -20.0f, 0.0f }; // TODO: make smooth zoom and out
+	XMVECTOR eye = { 0.0f, 0.0f, -40.0f, 0.0f }; // TODO: make smooth zoom and out
 	XMVECTOR at = { 0.0f, 0.0f, 0.0f, 0.0f };
 	XMVECTOR up = { 0.0f, 1.0f, 0.0f, 0.0f };
 	m_view = XMMatrixLookAtLH(eye, at, up);
@@ -201,42 +212,45 @@ void App::onInput()
 {
 	if (GetKeyState(VK_RIGHT) & 0x8000)
 	{
-		m_currentCirclePosX += 1.0f;
+		m_currentCirclePosX += 0.7f;
 	}
 	else if (GetKeyState(VK_LEFT) & 0x8000)
 	{
-		m_currentCirclePosX -= 1.0f;
+		m_currentCirclePosX -= 0.7f;
 	}
 	else if (GetKeyState(VK_UP) & 0x8000)
 	{
-		m_currentCirclePosY += 1.0f;
+		m_currentCirclePosY += 0.7f;
 	}
 	else if (GetKeyState(VK_DOWN) & 0x8000)
 	{
-		m_currentCirclePosY -= 1.0f;
+		m_currentCirclePosY -= 0.7f;
 	}
 }
 
 void App::onUpdate()
 {
-	Circle c(Vector3D(m_currentCirclePosX, m_currentCirclePosY, 0.0f), 2.0f);
-	c.placePoints(160);
+	Circle c(Vector3D(m_currentCirclePosX, m_currentCirclePosY, 0.0f), 1.0f);
+	c.placePoints(100);
 
-	c.intersectPoints(walls);
+	std::vector<Line> wallsToDraw;
+	c.intersectPoints(walls, wallsToDraw);
 
 	UINT numLines = c.circleLines.size();
 
 	std::vector<Vertex> vertices;
-	for (int i = 0; i < walls.size(); i++)
+	for (int i = 0; i < wallsToDraw.size(); i++)
 	{
+		Line wallToDraw = wallsToDraw[i];
+
 		XMFLOAT3 f;
-		f.x = walls[i].m_p1.x;
-		f.y = walls[i].m_p1.y;
+		f.x = wallToDraw.m_p1.x;
+		f.y = wallToDraw.m_p1.y;
 		f.z = 0.0f;
 		vertices.push_back(Vertex{ f, (XMFLOAT4)Colors::White });
 
-		f.x = walls[i].m_p2.x;
-		f.y = walls[i].m_p2.y;
+		f.x = wallToDraw.m_p2.x;
+		f.y = wallToDraw.m_p2.y;
 		vertices.push_back(Vertex{ f, (XMFLOAT4)Colors::White });
 	}
 
