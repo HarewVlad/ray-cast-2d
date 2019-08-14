@@ -266,17 +266,6 @@ void App::onUpdate()
 		f.y = c.circleLines[i].m_p2.y;
 		vertices.push_back(Vertex{ f, (XMFLOAT4)Colors::White });
 	}
-
-	D3D11_BUFFER_DESC bd;
-	ZeroMemory(&bd, sizeof(bd));
-	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bd.ByteWidth = sizeof(Vertex) * m_numVertices;
-	bd.CPUAccessFlags = 0;
-
-	D3D11_SUBRESOURCE_DATA initData;
-	ZeroMemory(&initData, sizeof(initData));
-	initData.pSysMem = &vertices[0];
 	
 	// Update vertex buffer
 	m_deviceContext->UpdateSubresource(m_vertexBuffer, 0, nullptr, &vertices[0], 0, 0);
@@ -300,7 +289,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 {
 	App app(hInstance);
 	app.onInit();
-	app.onRender();
 	app.run();
 
 	return 0;
