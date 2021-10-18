@@ -1,4 +1,4 @@
-# rayTracer2D
+# ray-cast-2d
 DirectX11
 
 ![](rayTracer.gif)
